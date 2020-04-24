@@ -19,5 +19,5 @@ If the joystick button is pressed, the game is paused an can be resumed with ano
 
 ## Video
 <a href="https://www.youtube.com/watch?v=pnxUSHRsz3Q" target="_blank">
-	<img src="https://img.youtube.com/vi/pnxUSHRsz3Q/0.jpg" alt="MINIGAME DODGY" width="240" height="180" border="10" />
+	<img src="https://img.youtube.com/vi/pnxUSHRsz3Q/0.jpg" alt="MINIGAME DODGY" width="500" height="350" border="10" />
 </a>
