@@ -1,18 +1,17 @@
+// Initialize LCD screen
 #include <LiquidCrystal.h>
+LiquidCrystal LCD(7, 8, 9, 10, 11, 12);
 
-// initialize the library with the numbers of the interface pins
+// Set Joystick Input pins
+const int SW_pin = A4;
+const int X_pin = A1;
+const int Y_pin = A0;
 
-int myCounter=0;  //declare your variable myCounter and set to 0
-
-LiquidCrystal LCD(2, 3, 8, 9, 10, 11); /// REGISTER SELECT PIN,ENABLE PIN,D4 PIN,D5 PIN, D6 PIN, D7 PIN
-
-const int SW_pin = 4;
-const int X_pin = 1;
-const int Y_pin = 0;
-
+// Set movement speed and update speed
 const int updatespeed = 10;
 const int cursorspeed = 100;
 
+// Create Character representing blob in upper left
 byte lo[8] = {
   B11000,
   B11000,
@@ -24,6 +23,7 @@ byte lo[8] = {
   B00000
 };
 
+// Create Character representing blob in upper right
 byte ro[8] = {
   B00011,
   B00011,
@@ -35,6 +35,7 @@ byte ro[8] = {
   B00000
 };
 
+// Create Character representing blob in middle left
 byte lm[8] = {
   B00000,
   B00000,
@@ -46,6 +47,7 @@ byte lm[8] = {
   B00000
 };
 
+// Create Character representing blob in middle right
 byte rm[8] = {
   B00000,
   B00000,
@@ -57,6 +59,7 @@ byte rm[8] = {
   B00000
 };
 
+// Create Character representing blob in lower left
 byte lu[8] = {
   B00000,
   B00000,
@@ -68,6 +71,7 @@ byte lu[8] = {
   B11000
 };
 
+// Create Character representing blob in lower right
 byte ru[8] = {
   B00000,
   B00000,
@@ -79,6 +83,7 @@ byte ru[8] = {
   B00011
 };
 
+// Create character representing full block
 byte full[8] = {
   B11111,
   B11111,
@@ -90,33 +95,38 @@ byte full[8] = {
   B11111
 };
 
+// Initialize blob position coordinates
 int x = 0;
 int y = 0;
 
+// Initialize block position x coordinates
 int block1 = 15;
 int block2 = 15;
+
+// Initialize counter variables for game 
 int level = 1;
 int counter = 0;
 int blockcounter1 = 0;
 int blockcounter2 = 0;
 int cursorcounter = 0;
 
+// Declare further variables
 int x_joystick, y_joystick,x_lcd, y_lcd, x_char, y_char, pos_char, x_delta, y_delta, blockspeed1, blockspeed2, SW;
 
 void setup()
 {
-  Serial.begin(115200);
-
+  // Let LCD screen learn created characters
   LCD.createChar(0,lo);
   LCD.createChar(1,ro);
   LCD.createChar(2,lm);
   LCD.createChar(3,rm);
   LCD.createChar(4,lu);
   LCD.createChar(5,ru);
-
   LCD.createChar(7,full);
-  
-  LCD.begin(16,2); //Tell Arduino to start your 16 column 2 row LCD
+
+  // Begin output on LCD and serial monitor
+  LCD.begin(16,2);
+  Serial.begin(115200);
 }
 
 void loop() {
@@ -144,39 +154,17 @@ void loop() {
     blockspeed2 = 300 / level;
   }
   
-  // JOYSTICK COMMAND
+  // READ JOYSTICK COMMAND
   x_joystick = analogRead(X_pin);
   y_joystick = analogRead(Y_pin);
   SW = analogRead(SW_pin);
 
-  if (SW<100) {
-    LCD.write("GAME PAUSED");
-    LCD.setCursor(0,1);
-    LCD.write("PRESS BUTTON");
-    delay(500);
-    while(true) {
-      SW = analogRead(SW_pin);
-      delay(updatespeed);
-      if (SW<100) {
-        LCD.clear();
-        LCD.setCursor(0,0);
-        LCD.write("RESUME IN");
-        for (int i = 3; i >= 0; i = i-1){
-          LCD.setCursor(0,1);
-          LCD.print(i);
-          LCD.write(" SECONDS");
-          delay(1000);
-        }
-        break;
-      }
-    }
-  }
-  
+  // INITIALIZE CURSOR MOVEMENT IF VALUES ABOVE THRESHOLD
   if (x_joystick < 400) {
-    x_delta = 1;
+    x_delta = -1;
   }
   else if (x_joystick > 600) {
-    x_delta = -1;
+    x_delta = 1;
   }
   else {
     x_delta = 0;
@@ -192,7 +180,31 @@ void loop() {
     y_delta = 0;
   }
 
-  // CALCULATE CURSOR POSITION
+  // PAUSE GAME IF BUTTON PUSHED
+  if (SW<20 && x_delta==0 && y_delta==0) {
+    LCD.write("GAME PAUSED");
+    LCD.setCursor(0,1);
+    LCD.write("PRESS BUTTON");
+    delay(500);
+    while(true) {
+      SW = analogRead(SW_pin);
+      delay(updatespeed);
+      if (SW<20 && x_delta==0 && y_delta==0) {
+        LCD.clear();
+        LCD.setCursor(0,0);
+        LCD.write("RESUME IN");
+        for (int i = 3; i >= 0; i = i-1){
+          LCD.setCursor(0,1);
+          LCD.print(i);
+          LCD.write(" SECONDS");
+          delay(1000);
+        }
+        break;
+      }
+    }
+  }
+
+  // CALCULATE NEW CURSOR POSITION
   if (cursorcounter >= cursorspeed) {
     x = x + x_delta;
     y = y + y_delta;
@@ -216,7 +228,8 @@ void loop() {
       y = 0;
       break;
   }
-  
+
+  // CONVERT CURSOR POSITION TO LCD COORDS
   x_lcd = x/2;
   x_char = x%2;
   y_lcd = y/3;
@@ -238,9 +251,9 @@ void loop() {
   if (block2 < 0) {
     block2 = 15;
   }
-  
-  // OUTPUT
-  /*Serial.print("Block1 ");
+
+  // OUTPUT TO SERIAL FOR DEBUGGING
+  Serial.print("Block1 ");
   Serial.println(block1);
   Serial.print("Block2 ");
   Serial.println(block2);
@@ -250,7 +263,7 @@ void loop() {
   Serial.println(y);
   Serial.print("SW ");
   Serial.println(SW);
-  Serial.println("--");*/
+  Serial.println("--");
 
   // SET CURSOR POSITION
   LCD.setCursor(x_lcd,y_lcd);
